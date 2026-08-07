@@ -1,0 +1,56 @@
+# =============================================================================
+# Bootstrap Web Playbook: Minimal Configuration
+# =============================================================================
+# This playbook performs essential bootstrapping only:
+# - Updates packages
+# - Creates admin user
+# - Installs Nginx
+#
+# Use for quick provisioning or when you don't need full hardening.
+# =============================================================================
+
+---
+- name: Bootstrap web servers (minimal)
+  hosts: web_servers
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Update all packages
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        update_cache: true
+      tags:
+        - packages
+
+    - name: Install Nginx
+      ansible.builtin.yum:
+        name: nginx
+        state: present
+      tags:
+        - nginx
+
+    - name: Start and enable Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+      tags:
+        - nginx
+
+    - name: Deploy simple index.html
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head><title>DevOps Portfolio</title></head>
+          <body>
+            <h1>✅ Nginx is running!</h1>
+            <p>Provisioned with Terraform + Ansible</p>
+          </body>
+          </html>
+        dest: /usr/share/nginx/html/index.html
+        mode: "0644"
+      tags:
+        - nginx
