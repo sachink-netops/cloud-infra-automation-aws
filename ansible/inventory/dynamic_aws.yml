@@ -1,0 +1,12 @@
+plugin: ansible.builtin.jsonfile
+file_path: ../../terraform/outputs/ansible_inventory.json
+keyed_groups:
+  - key: ansible_connection
+    prefix: conn
+  - key: ansible_user
+    prefix: user
+compose:
+  ansible_host: public_ip
+  ansible_user: "'ec2-user'"
+  ansible_connection: "'ssh'"
+  ansible_ssh_private_key_file: "'~/.ssh/id_ed25519'"
