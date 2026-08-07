@@ -1,0 +1,22 @@
+# =============================================================================
+# Nginx Install Role: Default Variables
+# =============================================================================
+
+---
+# Nginx service configuration
+nginx_service: "nginx"
+nginx_state: "started"
+nginx_enabled: true
+
+# Document root
+nginx_document_root: "/usr/share/nginx/html"
+
+# Custom page content
+nginx_welcome_title: "DevOps Portfolio - EC2 Bootstrap"
+nginx_welcome_message: "This instance was provisioned with Terraform and configured with Ansible."
+
+# Firewall configuration
+nginx_configure_firewall: true
+nginx_allowed_services:
+  - http
+  - https
