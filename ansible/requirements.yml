@@ -1,0 +1,15 @@
+# =============================================================================
+# Ansible Collection Requirements
+# =============================================================================
+# Install with: ansible-galaxy install -r requirements.yml
+# =============================================================================
+
+---
+collections:
+  # Ansible POSIX collection for firewalld, authorized_key, etc.
+  - name: ansible.posix
+    version: ">=1.5.0"
+
+  # Amazon AWS collection (for future AWS integrations)
+  - name: amazon.aws
+    version: ">=6.0.0"
