@@ -1,0 +1,169 @@
+# =============================================================================
+# CI Pipeline: Terraform + Ansible Validation
+# =============================================================================
+# This workflow runs on every pull request and push to main:
+# - Lints Terraform code (fmt, validate, tflint)
+# - Lints Ansible code (ansible-lint, syntax check)
+# - Runs Terraform plan to preview infrastructure changes
+#
+# Triggers:
+# - Pull requests to main branch
+# - Pushes to main branch
+# =============================================================================
+
+name: CI - Terraform + Ansible
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# Environment variables
+env:
+  AWS_REGION: us-west-2
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  TF_COLOR: true
+
+jobs:
+  # ===========================================================================
+  # Lint and Validate Job
+  # ===========================================================================
+  lint-and-validate:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Install tooling
+      - name: Install tooling
+        run: |
+          pipx install pre-commit tflint ansible-lint
+          
+          # Install TFLint
+          curl -L "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | jq -r '.assets[] | select(.name | test("linux_amd64.zip")) | .browser_download_url')" -o tflint.zip
+          unzip tflint.zip -d /usr/local/bin
+          rm tflint.zip
+
+      # Run pre-commit hooks
+      - name: Run pre-commit hooks
+        run: |
+          pre-commit run --all-files || (git diff; exit 1)
+
+      # Terraform fmt check
+      - name: Check Terraform formatting
+        run: |
+          cd terraform
+          terraform fmt -check -recursive -diff
+
+      # Terraform validate
+      - name: Validate Terraform
+        run: |
+          cd terraform/environments/dev
+          terraform init -backend=false
+          terraform validate
+
+      # Ansible lint
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml --exclude=requirements.yml
+
+      # Ansible syntax check
+      - name: Check Ansible syntax
+        run: |
+          cd ansible
+          ansible-playbook -i inventory/dynamic_aws.yml --syntax-check playbooks/site.yml
+
+  # ===========================================================================
+  # Terraform Plan Job
+  # ===========================================================================
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: lint-and-validate
+    
+    # Only run on pull requests
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.TERRAFORM_CI_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Terraform init
+      - name: Terraform Init
+        run: |
+          cd terraform/environments/dev
+          terraform init -input=false
+
+      # Terraform plan
+      - name: Terraform Plan
+        run: |
+          cd terraform/environments/dev
+          terraform plan -out=tfplan -input=false -no-color
+
+      # Upload plan as artifact
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform/environments/dev/tfplan
+          retention-days: 5
+
+  # ===========================================================================
+  # Ansible Dry Run Job
+  # ===========================================================================
+  ansible-dry-run:
+    name: Ansible Dry Run
+    runs-on: ubuntu-latest
+    needs: lint-and-validate
+    
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Install Ansible
+      - name: Install Ansible
+        run: |
+          pipx install ansible
+          ansible-galaxy install -r ansible/requirements.yml
+
+      # Ansible dry run (check mode)
+      - name: Ansible dry run
+        run: |
+          cd ansible
+          ansible-playbook -i inventory/dynamic_aws.yml playbooks/site.yml --check --diff
+        continue-on-error: true  # May fail if inventory doesn't exist yet
