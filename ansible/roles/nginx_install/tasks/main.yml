@@ -1,0 +1,81 @@
+# =============================================================================
+# Nginx Install Role: Main Tasks
+# =============================================================================
+# This role installs and configures Nginx web server:
+# - Install Nginx package
+# - Start and enable Nginx service
+# - Deploy custom index.html
+# - Configure firewall (if applicable)
+#
+# Idempotency: All tasks are idempotent (safe to run multiple times)
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# Install Nginx
+# -----------------------------------------------------------------------------
+- name: Install Nginx web server
+  ansible.builtin.yum:
+    name: nginx
+    state: present
+    update_cache: true
+  become: true
+  tags:
+    - nginx
+    - packages
+
+# -----------------------------------------------------------------------------
+# Start and Enable Nginx Service
+# -----------------------------------------------------------------------------
+- name: Ensure Nginx service is running and enabled
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+  become: true
+  tags:
+    - nginx
+    - service
+
+# -----------------------------------------------------------------------------
+# Deploy Custom Index.html
+# -----------------------------------------------------------------------------
+- name: Deploy custom index.html
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: /usr/share/nginx/html/index.html
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload nginx
+  tags:
+    - nginx
+    - content
+
+# -----------------------------------------------------------------------------
+# Configure Firewall (if firewalld is present)
+# -----------------------------------------------------------------------------
+- name: Allow HTTP through firewall
+  ansible.posix.firewalld:
+    service: http
+    permanent: true
+    state: enabled
+    immediate: true
+  become: true
+  when: ansible_facts.os_family == "RedHat"
+  tags:
+    - nginx
+    - firewall
+
+- name: Allow HTTPS through firewall
+  ansible.posix.firewalld:
+    service: https
+    permanent: true
+    state: enabled
+    immediate: true
+  become: true
+  when: ansible_facts.os_family == "RedHat"
+  tags:
+    - nginx
+    - firewall
