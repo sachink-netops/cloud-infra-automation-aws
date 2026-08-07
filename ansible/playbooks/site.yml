@@ -1,0 +1,62 @@
+# =============================================================================
+# Site Playbook: Complete Infrastructure Configuration
+# =============================================================================
+# This is the main playbook that orchestrates all roles.
+# Run with: ansible-playbook -i inventory/dynamic_aws.yml playbooks/site.yml
+#
+# Execution order:
+# 1. Gather facts from all hosts
+# 2. Apply baseline hardening to all web servers
+# 3. Install and configure Nginx on all web servers
+# =============================================================================
+
+---
+- name: Configure all web servers
+  hosts: web_servers
+  gather_facts: true
+  become: true
+  
+  # Pre-playbook tasks
+  pre_tasks:
+    - name: Display playbook start message
+      ansible.builtin.debug:
+        msg: "Starting configuration of {{ inventory_hostname }} at {{ ansible_date_time.iso8601 | default('N/A') }}"
+      tags:
+        - always
+
+  # Apply roles in order
+  roles:
+    - role: baseline_hardening
+      tags:
+        - baseline
+        - hardening
+        - security
+    
+    - role: nginx_install
+      tags:
+        - nginx
+        - webserver
+
+  # Post-playbook tasks
+  post_tasks:
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg: "Configuration completed successfully on {{ inventory_hostname }}"
+      tags:
+        - always
+
+    - name: Verify Nginx is running
+      ansible.builtin.command:
+        cmd: systemctl status nginx --no-pager
+      register: nginx_status
+      changed_when: false
+      tags:
+        - nginx
+        - verify
+
+    - name: Show Nginx status
+      ansible.builtin.debug:
+        var: nginx_status.stdout_lines
+      tags:
+        - nginx
+        - verify
