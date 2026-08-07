@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ nginx_welcome_title | default('DevOps Portfolio - EC2 Bootstrap') }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 {
+            color: #232F3E;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        .status {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .feature strong {
+            color: #232F3E;
+            display: block;
+            margin-bottom: 5px;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 {{ nginx_welcome_title | default('DevOps Portfolio Project') }}</h1>
+        
+        <div class="status">✓ SUCCESS: Nginx is running!</div>
+        
+        <p>{{ nginx_welcome_message | default('This instance was provisioned with Terraform and configured with Ansible.') }}</p>
+        
+        <div class="features">
+            <div class="feature">
+                <strong>☁️ Infrastructure</strong>
+                Terraform + AWS
+            </div>
+            <div class="feature">
+                <strong>⚙️ Configuration</strong>
+                Ansible Roles
+            </div>
+            <div class="feature">
+                <strong>🔒 Security</strong>
+                Hardened & Updated
+            </div>
+            <div class="feature">
+                <strong>🔄 CI/CD</strong>
+                Pre-commit + GitHub Actions
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Infrastructure as Code</strong> | <strong>Configuration Management</strong> | <strong>Cloud Engineering</strong></p>
+            <p>Provisioned on {{ ansible_date_time.iso8601 | default('N/A') }}</p>
+        </div>
+    </div>
+</body>
+</html>
